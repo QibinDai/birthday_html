@@ -1,0 +1,24 @@
+{
+  "name": "生日快乐",
+  "short_name": "生日快乐",
+  "description": "一个精美的生日快乐祝福页面，支持离线使用",
+  "start_url": "index.html",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#1a1025",
+  "theme_color": "#1a1025",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

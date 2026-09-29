@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="生日快乐">
+<meta name="theme-color" content="#1a1025">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>生日快乐 🎂</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{width:100%;height:100%;overflow:hidden;font-family:'PingFang SC','Helvetica Neue','Microsoft YaHei',sans-serif;}
+  body{
+    background:radial-gradient(ellipse at 50% 30%, #2d1b4e 0%, #1a1025 40%, #0d0717 100%);
+    position:relative;
+  }
+  #stars,#stars2,#stars3{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;}
+  #fireworks{position:fixed;top:0;left:0;width:100%;height:100%;z-index:5;pointer-events:none;}
+
+  /* ============ 页面模块通用 ============ */
+  .page{
+    position:fixed;top:0;left:0;width:100%;height:100%;z-index:10;
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;visibility:hidden;
+    transition:opacity .6s ease, transform .6s ease;
+    transform:translateX(60px);
+    overflow-y:auto;-webkit-overflow-scrolling:touch;
+  }
+  .page.active{opacity:1;visibility:visible;transform:translateX(0);}
+  .page.exit-left{opacity:0;transform:translateX(-60px);visibility:hidden;}
+
+  .container{
+    position:relative;text-align:center;
+    padding:max(env(safe-area-inset-top),32px) 24px max(env(safe-area-inset-bottom),32px);
+    width:100%;max-width:520px;
+  }
+
+  /* 蛋糕 */
+  .cake-wrap{margin-bottom:20px;animation:cakeBounce 3s ease-in-out infinite;}
+  @keyframes cakeBounce{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-12px) scale(1.02);}}
+  .cake{font-size:clamp(70px,18vw,120px);line-height:1;display:inline-block;filter:drop-shadow(0 8px 20px rgba(255,180,80,.35));}
+
+  /* 标题 */
+  .title{
+    font-size:clamp(26px,7vw,48px);font-weight:800;
+    background:linear-gradient(135deg,#ffd700 0%,#ff6ec7 50%,#c084fc 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    margin-bottom:8px;letter-spacing:2px;
+    animation:fadeInUp .8s ease .2s both;
+  }
+  .subtitle{
+    font-size:clamp(14px,4vw,18px);color:rgba(255,255,255,.7);
+    margin-bottom:24px;animation:fadeInUp .8s ease .4s both;
+  }
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+
+  .wish{
+    font-size:clamp(13px,3.8vw,16px);color:rgba(255,255,255,.82);
+    line-height:1.8;margin-bottom:32px;
+    animation:fadeInUp .8s ease .6s both;
+  }
+
+  /* 通用按钮 */
+  .btn{
+    display:inline-block;padding:14px 40px;border:none;border-radius:40px;
+    font-size:17px;font-weight:600;cursor:pointer;
+    background:linear-gradient(135deg,#ff6ec7,#c084fc);color:#fff;
+    box-shadow:0 6px 24px rgba(255,110,199,.45);
+    transition:transform .2s,box-shadow .2s;
+    animation:fadeInUp .8s ease .8s both;
+  }
+  .btn:active{transform:scale(.95);box-shadow:0 3px 12px rgba(255,110,199,.4);}
+
+  /* 输入框 */
+  .input-group{animation:fadeInUp .8s ease .6s both;margin-bottom:16px;}
+  .input-hint{font-size:clamp(14px,3.8vw,17px);color:rgba(255,200,230,.85);margin-bottom:16px;}
+  .input-box{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;}
+  .name-input{
+    width:min(220px,70vw);height:48px;padding:0 18px;border-radius:24px;
+    border:2px solid rgba(255,110,199,.5);background:rgba(255,255,255,.08);
+    color:#fff;font-size:16px;outline:none;-webkit-appearance:none;
+    transition:border-color .3s,box-shadow .3s;
+  }
+  .name-input::placeholder{color:rgba(255,255,255,.35);}
+  .name-input:focus{border-color:#ff6ec7;box-shadow:0 0 0 3px rgba(255,110,199,.2);}
+  .submit-btn{
+    height:48px;padding:0 24px;border:none;border-radius:24px;
+    font-size:16px;font-weight:600;cursor:pointer;white-space:nowrap;
+    background:linear-gradient(135deg,#ff6ec7,#c084fc);color:#fff;
+    box-shadow:0 6px 20px rgba(255,110,199,.4);
+    transition:transform .2s,box-shadow .2s;
+  }
+  .submit-btn:active{transform:scale(.95);}
+  .name-error{color:#f87171;font-size:13px;margin-top:10px;min-height:18px;animation:fadeInUp .3s ease both;}
+
+  /* 奖励页面 */
+  .reward-icon{font-size:clamp(60px,16vw,100px);line-height:1;margin-bottom:20px;display:inline-block;animation:rewardFloat 2.5s ease-in-out infinite;}
+  @keyframes rewardFloat{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-10px) rotate(3deg);}}
+  .reward-title{
+    font-size:clamp(22px,6vw,40px);font-weight:800;
+    background:linear-gradient(135deg,#fbbf24 0%,#f87171 50%,#c084fc 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    margin-bottom:16px;letter-spacing:1px;animation:fadeInUp .8s ease .3s both;
+  }
+  .reward-hint{
+    font-size:clamp(15px,4.2vw,19px);color:rgba(255,220,180,.85);
+    margin-bottom:36px;line-height:1.6;animation:fadeInUp .5s ease both;
+  }
+
+  .hint{
+    position:fixed;bottom:max(env(safe-area-inset-bottom),16px);left:0;right:0;
+    text-align:center;font-size:12px;color:rgba(255,255,255,.25);z-index:10;
+  }
+
+  /* 出发终页 */
+  #page-finale{
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;visibility:hidden;transition:opacity .5s ease;
+    flex-direction:column;
+  }
+  #page-finale.active{opacity:1;visibility:visible;}
+  #page-finale .finale-text{
+    font-size:clamp(60px,20vw,160px);font-weight:900;letter-spacing:4px;
+    background:linear-gradient(135deg,#ffd700 0%,#ff6ec7 30%,#c084fc 60%,#60a5fa 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    animation:finalePop .8s cubic-bezier(.34,1.56,.64,1) both,finaleGlow 2s ease-in-out infinite .8s;
+  }
+  @keyframes finalePop{from{opacity:0;transform:scale(.3) rotate(-10deg);}to{opacity:1;transform:scale(1) rotate(0);}}
+  @keyframes finaleGlow{0%,100%{filter:drop-shadow(0 0 20px rgba(255,215,0,.4));}50%{filter:drop-shadow(0 0 50px rgba(255,110,199,.6));}}
+
+  .finale-address{
+    margin-top:36px;
+    animation:fadeInUp .8s ease 1.2s both;
+    text-align:center;
+  }
+  .finale-address-text{
+    font-size:clamp(13px,3.5vw,16px);
+    color:rgba(255,255,255,.6);
+    -webkit-user-select:text;user-select:text;
+    cursor:pointer;
+    padding:10px 20px;
+    border-radius:12px;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.12);
+    transition:background .2s;
+    display:inline-block;
+  }
+  .finale-address-text:active{background:rgba(255,255,255,.15);}
+  .finale-copy-tip{
+    font-size:11px;color:rgba(255,255,255,.3);
+    margin-top:10px;
+    animation:fadeInUp .8s ease 1.4s both;
+  }
+  .copy-toast{
+    position:fixed;bottom:30%;left:50%;transform:translateX(-50%) translateY(20px);
+    background:rgba(255,110,199,.9);color:#fff;
+    padding:8px 20px;border-radius:20px;font-size:14px;
+    opacity:0;transition:opacity .3s,transform .3s;z-index:100;
+    pointer-events:none;
+  }
+  .copy-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="stars2"></canvas>
+<canvas id="stars3"></canvas>
+<canvas id="fireworks"></canvas>
+
+<!-- ========== 模块1：生日快乐 ========== -->
+<div class="page active" id="page-birthday">
+  <div class="container">
+    <div class="cake-wrap"><span class="cake">🎂</span></div>
+    <h1 class="title">生日快乐！</h1>
+    <p class="subtitle">Happy Birthday 🎉</p>
+    <button class="btn" id="startBtn">开始闯关</button>
+  </div>
+</div>
+
+<!-- ========== 模块2：第一题 ========== -->
+<div class="page" id="page-quiz1">
+  <div class="container">
+    <div class="cake-wrap"><span class="cake">🎯</span></div>
+    <h2 class="title">第一关</h2>
+    <div class="input-group">
+      <p class="input-hint">今天过生日的大宝贝是谁？</p>
+      <div class="input-box">
+        <input type="text" class="name-input" id="nameInput" placeholder="输入名字…" autocomplete="off" autocapitalize="off" autocorrect="off">
+        <button class="submit-btn" id="submitName">确认</button>
+      </div>
+      <div class="name-error" id="nameError"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 模块3：第一个奖励 ========== -->
+<div class="page" id="page-reward1">
+  <div class="container">
+    <div class="reward-icon">🎁</div>
+    <h2 class="reward-title">请领取你的第一个奖励</h2>
+    <button class="btn" id="claimReward1">领取奖励</button>
+    <div id="rewardResult" style="margin-top:28px;">
+      <p class="reward-hint" id="rewardHint" style="display:none;">打开你的衣柜 ✨</p>
+      <button class="btn" id="nextLevel1" style="display:none;">下一关</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 模块4：第二题 ========== -->
+<div class="page" id="page-quiz2">
+  <div class="container">
+    <div class="cake-wrap"><span class="cake">💘</span></div>
+    <h2 class="title">第二关</h2>
+    <div class="input-group">
+      <p class="input-hint">她最爱的人是谁？</p>
+      <div class="input-box">
+        <input type="text" class="name-input" id="nameInput2" placeholder="输入名字…" autocomplete="off" autocapitalize="off" autocorrect="off">
+        <button class="submit-btn" id="submitName2">确认</button>
+      </div>
+      <div class="name-error" id="nameError2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 模块5：第二个奖励 ========== -->
+<div class="page" id="page-reward2">
+  <div class="container">
+    <div class="reward-icon">🧧</div>
+    <h2 class="reward-title">请领取你的第二个奖励</h2>
+    <button class="btn" id="claimReward2">领取奖励</button>
+    <div id="rewardResult2" style="margin-top:28px;">
+      <p class="reward-hint" id="rewardHint2" style="display:none;">打开他的书包 ✨</p>
+      <button class="btn" id="nextLevel2" style="display:none;">下一关</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 模块6：第3关 ========== -->
+<div class="page" id="page-quiz3">
+  <div class="container">
+    <div class="cake-wrap"><span class="cake">🍽️</span></div>
+    <h2 class="title">第3关</h2>
+    <div class="input-group">
+      <p class="input-hint">请输入我们接下来要干什么</p>
+      <div class="input-box">
+        <input type="text" class="name-input" id="nameInput3" placeholder="输入答案…" autocomplete="off" autocapitalize="off" autocorrect="off">
+        <button class="submit-btn" id="submitName3">确认</button>
+      </div>
+      <div class="name-error" id="nameError3"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 模块7：第三个奖励 / 出发 ========== -->
+<div class="page" id="page-reward3">
+  <div class="container" id="reward3Content">
+    <div class="reward-icon">🚗</div>
+    <h2 class="reward-title">准备好了吗？</h2>
+    <button class="btn" id="readyBtn">准备好了！</button>
+  </div>
+</div>
+
+<!-- ========== 终页：出发！！ ========== -->
+<div class="page" id="page-finale">
+  <div class="finale-text">出发！！</div>
+  <div class="finale-address">
+    <div class="finale-address-text" id="addressText" onclick="copyAddress()">Mercato by Jean-Georges意大利餐厅</div>
+  </div>
+</div>
+<div class="copy-toast" id="copyToast">已复制 ✅</div>
+
+
+<script>
+(function(){
+  /* ============ 星空背景 ============ */
+  function initStars(canvasId, count, sizeMax){
+    var c=document.getElementById(canvasId);
+    var ctx=c.getContext('2d');
+    function resize(){c.width=innerWidth;c.height=innerHeight;}
+    resize(); addEventListener('resize',resize);
+    var stars=[];
+    for(var i=0;i<count;i++){stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*sizeMax});}
+    function draw(){
+      ctx.clearRect(0,0,c.width,c.height);
+      for(var i=0;i<stars.length;i++){
+        var s=stars[i];
+        ctx.globalAlpha=Math.abs(Math.sin(Date.now()*0.001+s.x))*0.8+0.2;
+        ctx.fillStyle='#fff';
+        ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+  }
+  initStars('stars',100,1.2); initStars('stars2',60,1.0); initStars('stars3',30,1.5);
+
+  /* ============ 烟花 ============ */
+  var fw=document.getElementById('fireworks');
+  var fctx=fw.getContext('2d');
+  function fwResize(){fw.width=innerWidth;fw.height=innerHeight;}
+  fwResize(); addEventListener('resize',fwResize);
+  var particles=[];
+  var colors=['#ffd700','#ff6ec7','#c084fc','#60a5fa','#34d399','#fbbf24','#f87171'];
+  function explode(x,y){
+    var color=colors[Math.floor(Math.random()*colors.length)];
+    var count=40+Math.floor(Math.random()*20);
+    for(var i=0;i<count;i++){
+      var angle=(Math.PI*2*i)/count, speed=2+Math.random()*4;
+      particles.push({x:x,y:y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:1,color:color,size:2+Math.random()*2});
+    }
+  }
+  function fwAnimate(){
+    fctx.clearRect(0,0,fw.width,fw.height);
+    for(var i=particles.length-1;i>=0;i--){
+      var p=particles[i];
+      p.x+=p.vx;p.y+=p.vy;p.vy+=0.06;p.vx*=0.99;p.vy*=0.99;p.life-=0.012;
+      if(p.life<=0){particles.splice(i,1);continue;}
+      fctx.globalAlpha=p.life;fctx.fillStyle=p.color;
+      fctx.beginPath();fctx.arc(p.x,p.y,p.size,0,Math.PI*2);fctx.fill();
+    }
+    fctx.globalAlpha=1;requestAnimationFrame(fwAnimate);
+  }
+  fwAnimate();
+  function autoFire(){
+    explode(Math.random()*fw.width*0.8+fw.width*0.1, Math.random()*fw.height*0.5+fw.height*0.1);
+    setTimeout(autoFire,1800+Math.random()*1500);
+  }
+  autoFire();
+  function celebrateBurst(){
+    explode(Math.random()*fw.width*0.8+fw.width*0.1, Math.random()*fw.height*0.5+fw.height*0.1);
+  }
+
+  /* ============ 页面切换 ============ */
+  function goToPage(fromId, toId){
+    var from=document.getElementById(fromId), to=document.getElementById(toId);
+    from.classList.add('exit-left'); from.classList.remove('active');
+    setTimeout(function(){ to.classList.add('active'); celebrateBurst(); },300);
+  }
+
+  /* ============ 模块1：开始闯关 ============ */
+  document.getElementById('startBtn').addEventListener('click',function(){
+    goToPage('page-birthday','page-quiz1');
+  });
+
+  /* ============ 模块2：第一关 - 输入名字 ============ */
+  var nameInput=document.getElementById('nameInput');
+  var nameError=document.getElementById('nameError');
+  var ACCEPT_NAMES1=['田佳宁','我','宁宁'];
+  var QUIZ1_HIDDEN_MSG={'宁宁':'宁宁好听'};
+  function handleSubmit(){
+    var val=nameInput.value.trim();
+    if(ACCEPT_NAMES1.indexOf(val)>=0){
+      nameError.textContent='';
+      if(QUIZ1_HIDDEN_MSG[val]){
+        nameError.textContent=QUIZ1_HIDDEN_MSG[val];
+        celebrateBurst();
+        setTimeout(function(){ goToPage('page-quiz1','page-reward1'); },1600);
+      }else{
+        celebrateBurst();
+        setTimeout(function(){ goToPage('page-quiz1','page-reward1'); },600);
+      }
+    }else if(val===''){
+      nameError.textContent='请先输入名字哦～';
+    }else{
+      nameError.textContent='名字不对呢，再想想是谁的生日？';
+      nameInput.value='';
+    }
+  }
+  document.getElementById('submitName').addEventListener('click',handleSubmit);
+  nameInput.addEventListener('keydown',function(e){
+    if(e.key==='Enter'||e.keyCode===13){e.preventDefault();handleSubmit();}
+  });
+
+  /* ============ 模块3：第一个奖励 ============ */
+  var rewardClaimed=false;
+  document.getElementById('claimReward1').addEventListener('click',function(){
+    if(rewardClaimed) return;
+    rewardClaimed=true;
+    celebrateBurst();
+    document.getElementById('claimReward1').style.display='none';
+    document.getElementById('rewardHint').style.display='block';
+    document.getElementById('nextLevel1').style.display='inline-block';
+  });
+
+  /* ============ 模块3→4：下一关 ============ */
+  document.getElementById('nextLevel1').addEventListener('click',function(){
+    goToPage('page-reward1','page-quiz2');
+  });
+
+  /* ============ 模块4：第二关 - 输入名字 ============ */
+  var nameInput2=document.getElementById('nameInput2');
+  var nameError2=document.getElementById('nameError2');
+  var ACCEPT_NAMES2=['戴麒斌','我老公','老公'];
+  var QUIZ2_HIDDEN_MSG={'戴麒斌':'嘿嘿，我就知道','我老公':'嘿嘿，我就知道','老公':'嘿嘿，我就知道'};
+  function handleSubmit2(){
+    var val=nameInput2.value.trim();
+    if(ACCEPT_NAMES2.indexOf(val)>=0){
+      nameError2.textContent='';
+      if(QUIZ2_HIDDEN_MSG[val]){
+        nameError2.textContent=QUIZ2_HIDDEN_MSG[val];
+        celebrateBurst();
+        setTimeout(function(){ goToPage('page-quiz2','page-reward2'); },1600);
+      }else{
+        celebrateBurst();
+        setTimeout(function(){ goToPage('page-quiz2','page-reward2'); },600);
+      }
+    }else if(val==='妈妈'){
+      nameError2.innerHTML='算让你过，但不该先老公嘛，😠';
+      celebrateBurst();
+      setTimeout(function(){ goToPage('page-quiz2','page-reward2'); },1800);
+    }else if(val===''){
+      nameError2.textContent='请先输入名字哦～';
+    }else{
+      nameError2.textContent='不对哦～～再想想～～';
+      nameInput2.value='';
+    }
+  }
+  document.getElementById('submitName2').addEventListener('click',handleSubmit2);
+  nameInput2.addEventListener('keydown',function(e){
+    if(e.key==='Enter'||e.keyCode===13){e.preventDefault();handleSubmit2();}
+  });
+
+  /* ============ 模块5：第二个奖励 ============ */
+  var reward2Claimed=false;
+  document.getElementById('claimReward2').addEventListener('click',function(){
+    if(reward2Claimed) return;
+    reward2Claimed=true;
+    celebrateBurst();
+    document.getElementById('claimReward2').style.display='none';
+    document.getElementById('rewardHint2').style.display='block';
+    document.getElementById('nextLevel2').style.display='inline-block';
+  });
+
+  /* ============ 模块5→6：下一关 ============ */
+  document.getElementById('nextLevel2').addEventListener('click',function(){
+    goToPage('page-reward2','page-quiz3');
+  });
+
+  /* ============ 模块6：第3关 - 输入接下来干什么 ============ */
+  var nameInput3=document.getElementById('nameInput3');
+  var nameError3=document.getElementById('nameError3');
+  /* 先排除不正经答案，再判断是否与正经美食相关 */
+  var BAD_KEYWORDS=['屎','尿','屁','毒','药','垃圾','狗','猪','屎粑粑'];
+  var FOOD_KEYWORDS=['吃饭','早饭','午饭','晚饭','早餐','午餐','晚餐','宵夜','大餐','西餐','中餐','日料','日式','韩餐','火锅','烧烤','串串','奶茶','蛋糕','寿司','拉面','日面','炸鸡','汉堡','披萨','牛排','牛排','海鲜','点心','零食','外卖','下馆子','觅食','聚餐','美食','吃东西','吃货','吃好吃的','庆机','蛋糕','长寿面','碗面'];
+  function isBadAnswer(val){
+    var lower=val.toLowerCase();
+    for(var i=0;i<BAD_KEYWORDS.length;i++){
+      if(lower.indexOf(BAD_KEYWORDS[i])>=0) return true;
+    }
+    return false;
+  }
+  function isFoodAnswer(val){
+    var lower=val.toLowerCase();
+    for(var i=0;i<FOOD_KEYWORDS.length;i++){
+      if(lower.indexOf(FOOD_KEYWORDS[i])>=0) return true;
+    }
+    return false;
+  }
+  function handleSubmit3(){
+    var val=nameInput3.value.trim();
+    if(val==='吃屎'){
+      nameError3.innerHTML='没想到你的口味这么重 😦';
+      nameInput3.value='';
+    }else if(isBadAnswer(val)){
+      nameError3.textContent='别闹了，认真想想～';
+      nameInput3.value='';
+    }else if(val && isFoodAnswer(val)){
+      nameError3.textContent='';
+      celebrateBurst();
+      setTimeout(function(){ goToPage('page-quiz3','page-reward3'); },600);
+    }else if(val===''){
+      nameError3.textContent='请先输入答案哦～';
+    }else{
+      nameError3.textContent='想想过生日最开心的事是什么呢？～';
+      nameInput3.value='';
+    }
+  }
+  document.getElementById('submitName3').addEventListener('click',handleSubmit3);
+  nameInput3.addEventListener('keydown',function(e){
+    if(e.key==='Enter'||e.keyCode===13){e.preventDefault();handleSubmit3();}
+  });
+
+  /* ============ 模块7：第三个奖励 - 准备好了吗 ============ */
+  document.getElementById('readyBtn').addEventListener('click',function(){
+    celebrateBurst();
+    /* 隐藏模块7内容，显示终页 */
+    var r3=document.getElementById('page-reward3');
+    r3.classList.add('exit-left');
+    r3.classList.remove('active');
+    setTimeout(function(){
+      var finale=document.getElementById('page-finale');
+      finale.classList.add('active');
+      celebrateBurst();
+    },300);
+  });
+
+  /* ============ 复制地址 ============ */
+  function copyAddress(){
+    var text='Mercato by Jean-Georges意大利餐厅';
+    var toast=document.getElementById('copyToast');
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        toast.classList.add('show');
+        setTimeout(function(){toast.classList.remove('show');},1500);
+      }).catch(function(){
+        fallbackCopy(text,toast);
+      });
+    }else{
+      fallbackCopy(text,toast);
+    }
+  }
+  function fallbackCopy(text,toast){
+    var ta=document.createElement('textarea');
+    ta.value=text;
+    ta.style.position='fixed';ta.style.left='-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try{document.execCommand('copy');toast.classList.add('show');setTimeout(function(){toast.classList.remove('show');},1500);}catch(e){}
+    document.body.removeChild(ta);
+  }
+  window.copyAddress=copyAddress;
+
+  /* ============ PWA 注册 ============ */
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',function(){
+      navigator.serviceWorker.register('sw.js').catch(function(){});
+    });
+  }
+})();
+</script>
+</body>
+</html>
